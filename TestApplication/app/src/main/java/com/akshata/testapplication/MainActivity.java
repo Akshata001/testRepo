@@ -24,7 +24,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends ParentActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private List<Videos> videosList;
@@ -42,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         init();
+
+        //if net connection available, call to api
         if (singletonUtil.isConnectedToInternet(MainActivity.this))
             callToGetVideoList();
         else
@@ -49,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void init() {
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -60,6 +63,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    /**
+     * api call to get video list
+     */
     private void callToGetVideoList() {
 
         final Retrofit retrofit = ApiClient.getClient();
@@ -93,19 +99,27 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * handle success response of call
+     *
+     * @param responseVideosList video list fetched in response
+     */
     private void onResponseSuccess(List<Videos> responseVideosList) {
 
         if (pageNo > 1) {
+            //if already 1 page is loaded
             videosList.remove(videosList.size() - 1);
             videoAdapter.notifyItemRemoved(videosList.size());
             videosList.addAll(responseVideosList);
             videoAdapter.notifyDataSetChanged();
             videoAdapter.setLoaded();
         } else {
+            //init adapter in case loading first page
             videosList.addAll(responseVideosList);
-            videoAdapter = new VideoAdapter(recyclerView, videosList, this);
+            videoAdapter = new VideoAdapter(recyclerView, videosList, MainActivity.this);
             recyclerView.setAdapter(videoAdapter);
         }
+
         pageNo++;
 
         //set load more listener for the RecyclerView adapter
@@ -114,12 +128,14 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onLoadMore() {
                         if (pageNo <= 3) {
+                            //on load more, add null item in list to show progressbar
                             videosList.add(null);
                             videoAdapter.notifyItemInserted(videosList.size() - 1);
 
                             new Handler().postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
+                                    //call again to api for loading next page
                                     callToGetVideoList();
                                 }
                             }, 5000);

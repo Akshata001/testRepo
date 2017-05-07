@@ -1,12 +1,15 @@
 package com.akshata.testapplication.adapter;
 
 import android.app.Activity;
+import android.content.Context;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -23,22 +26,24 @@ import java.util.List;
 public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final int VIEW_TYPE_ITEM = 0;
     private final int VIEW_TYPE_LOADING = 1;
+    private final Context context;
     private OnLoadMoreListener onLoadMoreListener;
     private boolean isLoading;
-    private Activity activity;
+
     private List<Videos> videosList;
     private int visibleThreshold = 5;
     private int lastVisibleItem, totalItemCount;
 
-    public VideoAdapter(RecyclerView recyclerView, List<Videos> videosList, Activity activity) {
+    public VideoAdapter(RecyclerView recyclerView, List<Videos> videosList, Context context) {
         this.videosList = videosList;
-        this.activity = activity;
+        this.context = context;
 
         final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
+
                 totalItemCount = linearLayoutManager.getItemCount();
                 lastVisibleItem = linearLayoutManager.findLastVisibleItemPosition();
                 if (!isLoading && totalItemCount <= (lastVisibleItem + visibleThreshold)) {
@@ -63,10 +68,12 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == VIEW_TYPE_ITEM) {
-            View view = LayoutInflater.from(activity).inflate(R.layout.row_item_videos, parent, false);
+            //show row_item for data
+            View view = LayoutInflater.from(context).inflate(R.layout.row_item_videos, parent, false);
             return new UserViewHolder(view);
         } else if (viewType == VIEW_TYPE_LOADING) {
-            View view = LayoutInflater.from(activity).inflate(R.layout.item_loading, parent, false);
+            //show row_item for progressbar
+            View view = LayoutInflater.from(context).inflate(R.layout.item_loading, parent, false);
             return new LoadingViewHolder(view);
         }
         return null;
@@ -82,8 +89,8 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             userViewHolder.textViewUploadedDate.setText(SingletonUtil.getSingletonConfigInstance().setDateTimeFormat(videos.getUploadDate()));
             userViewHolder.textViewUsername.setText(videos.getUserName());
 
-            Glide.with(activity).load(videos.getThumbnailMedium()).into(userViewHolder.imageViewVideoThumbnail);
-            Glide.with(activity).load(videos.getUserPortraitMedium()).into(userViewHolder.imageViewUserThumbnailImg);
+            Glide.with(context).load(videos.getThumbnailMedium()).into(userViewHolder.imageViewVideoThumbnail);
+            Glide.with(context).load(videos.getUserPortraitMedium()).into(userViewHolder.imageViewUserThumbnailImg);
 
         } else if (holder instanceof LoadingViewHolder) {
             LoadingViewHolder loadingViewHolder = (LoadingViewHolder) holder;
@@ -135,17 +142,27 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             imageViewShowMore.setBackgroundResource(R.drawable.ic_action_down);
             textViewVideoDesc.setVisibility(View.GONE);
 
+            //handle to show/hide description text on clicking more button
+
             imageViewShowMore.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     if (showDetail) {
                         imageViewShowMore.setBackgroundResource(R.drawable.ic_action_down);
+
+                        //move up animation
+                        Animation slideUp = AnimationUtils.loadAnimation(context, R.anim.slide_up);
+                        textViewVideoDesc.startAnimation(slideUp);
                         textViewVideoDesc.setVisibility(View.GONE);
                         showDetail = false;
 
                     } else {
                         imageViewShowMore.setBackgroundResource(R.drawable.ic_action_up);
+
                         textViewVideoDesc.setVisibility(View.VISIBLE);
+                        //move down animation
+                        Animation slideDown = AnimationUtils.loadAnimation(context, R.anim.slide_down);
+                        textViewVideoDesc.startAnimation(slideDown);
                         showDetail = true;
 
                     }
